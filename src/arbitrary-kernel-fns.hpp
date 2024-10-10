@@ -4,8 +4,9 @@
 #include <string>
 #include "LEMP-fns.hpp"
 
-floatT Kernel(floatT, floatT, floatT);
-cheby::ArrayXd Kernel(cheby::ArrayXd, floatT, floatT);
+// Modify Kernel to accept alpha and beta
+floatT Kernel(floatT, floatT, floatT, floatT);  // Updated to include alpha
+cheby::ArrayXd Kernel(cheby::ArrayXd, floatT, floatT, floatT);  // Updated to include alpha
 
 Eigen::MatrixXd load_matrix(std::string f_name, int L) {
   Eigen::MatrixXd X(L,L);
@@ -45,13 +46,14 @@ floatT twoD_integral( std::vector<cheby::ArrayXd> const &f ) {
 }
 
 
-std::vector<cheby::ArrayXd> Kern_eval(int L, floatT beta) {
+// Updated to take alpha as an additional parameter
+std::vector<cheby::ArrayXd> Kern_eval(int L, floatT alpha, floatT beta) {
 	std::vector<cheby::ArrayXd> ans(L);
 	for (int i=0; i<L; ++i) ans[i].resize(L,0.0);
 	cheby::ArrayXd X = cheby::ChebPts(L);
 	for (int i=0; i<L; ++i) {
 		for (int j=0; j<L; ++j) {
-			ans[i][j] = Kernel(X[i],X[j],beta);
+			ans[i][j] = Kernel(X[i], X[j], alpha, beta);  // Pass both alpha and beta
 		}
 	}
 	return ans;
@@ -62,13 +64,14 @@ floatT xlogx(floatT x){
 	else return 0.0;
 }
 
-std::vector<cheby::ArrayXd> KlnK_eval(int L, floatT beta) {
+// Updated to take alpha as an additional parameter
+std::vector<cheby::ArrayXd> KlnK_eval(int L, floatT alpha, floatT beta) {
 	std::vector<cheby::ArrayXd> ans(L);
 	for (int i=0; i<L; ++i) ans[i].resize(L,0.0);
 	cheby::ArrayXd X = cheby::ChebPts(L);
 	for (int i=0; i<L; ++i) {
 		for (int j=0; j<L; ++j) {
-			ans[i][j] = xlogx(Kernel(X[i],X[j],beta));
+			ans[i][j] = xlogx(Kernel(X[i], X[j], alpha, beta));  // Pass both alpha and beta
 		}
 	}
 	return ans;
