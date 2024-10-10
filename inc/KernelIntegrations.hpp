@@ -2,7 +2,8 @@
 #include <vector>
 #include "cheby2.hpp"
 
-cheby::ArrayXd Kernel(cheby::ArrayXd, floatT, floatT);
+// Modify Kernel function to include alpha and beta
+cheby::ArrayXd Kernel(cheby::ArrayXd, floatT, floatT, floatT);  // Added alpha as a new parameter
 
 namespace KernelIntegration {
   
@@ -21,23 +22,26 @@ namespace KernelIntegration {
     return c;
   }
   
-  floatT integrate_kernel( ArrayXd const &f, ArrayXd const &K ) {
+  // Modify the integrate_kernel function to use both alpha and beta
+  floatT integrate_kernel(ArrayXd const &f, ArrayXd const &K) {
     ArrayXd c = vals_to_coefs(f * K);
     ArrayXd c_new = cheby::Chebyshev_coef_integrate(c);
-    return cheby::Chebyshev_value(1.0,c_new);
+    return cheby::Chebyshev_value(1.0, c_new);
   }
   
-  ArrayXd K(ArrayXd x, floatT y, floatT beta) {
-    return Kernel(x, y, beta);
+  // Modify K() function to accept both alpha and beta
+  ArrayXd K(ArrayXd x, floatT y, floatT alpha, floatT beta) {
+    return Kernel(x, y, alpha, beta);  // Pass both alpha and beta to the kernel
   }
   
   ArrayXd T(ArrayXd x, floatT n) {
     return cos(n * acos(x));
   }
   
-  std::vector<ArrayXd> compute_integrals(int L, floatT beta) {
+  // Modify compute_integrals to take both alpha and beta as parameters
+  std::vector<ArrayXd> compute_integrals(int L, floatT alpha, floatT beta) {
   
-    ArrayXd x = cheby::ChebPts(L);
+   ArrayXd x = cheby::ChebPts(L);
   
     std::vector<ArrayXd> I_T(L);
     std::vector<ArrayXd> T_j(L);
@@ -48,7 +52,7 @@ namespace KernelIntegration {
     for (int j=0; j<L; ++j) T_j[j] = T(x,j);
   
     for (int i=0; i<L; ++i) {
-      ArrayXd K_i = K(x, x[i], beta);
+      ArrayXd K_i = K(x, x[i], alpha, beta);
       #pragma omp parallel shared(K_i, I_T, T_j) 
       for (int j=0; j<L; ++j) {
         I_T[j][i] = integrate_kernel(T_j[j], K_i);
@@ -59,4 +63,3 @@ namespace KernelIntegration {
   }
 
 };
-
