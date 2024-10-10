@@ -2,6 +2,24 @@ import ctypes
 import numpy as np
 import networkx as nx
 
+# Added a funciton to create a DiGraph from the raw gml files
+def read_gml_as_graph(filename):
+    """Read a GML file and return the directed graph.
+
+    :param filename: Input filename
+    :type filename: str
+    :return: Directed graph
+    :rtype: nx.DiGraph
+    """
+    # Read the directed graph from the GML file using NetworkX
+    G = nx.read_gml(filename)
+
+    # Ensure the graph is directed
+    if not G.is_directed():
+        G = G.to_directed()
+
+    return G
+
 # C arrays of ints/doubles using numpy
 array_int = np.ctypeslib.ndpointer(dtype=ctypes.c_int,ndim=1, flags='CONTIGUOUS')
 array_double = np.ctypeslib.ndpointer(dtype=np.double,ndim=1, flags='CONTIGUOUS')
