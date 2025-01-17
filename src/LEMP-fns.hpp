@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <vector>
 #include <tuple>
+#include "ComparisonGraph.h"
+#include <utility>
 
 typedef std::vector<std::pair<int,int>> elist_t;
 typedef std::unordered_map<int, cheby::Chebyshev> marginal_t;
@@ -13,6 +15,37 @@ typedef std::unordered_map<int, marginal_t> message_t;
 const bool KEEP_ORDER = true;
 const bool ENFORCE_POSITIVE = true;
 
+struct pair_hash {
+    template <class T1, class T2>
+    std::size_t operator() (const std::pair<T1, T2>& pair) const {
+        auto hash1 = std::hash<T1>{}(pair.first);
+        auto hash2 = std::hash<T2>{}(pair.second);
+        return hash1 ^ hash2; // Combine the two hash values
+    }
+};
+
+// create an undirected edgelist from a ComparisonGraph – lists edges in both directions
+elist_t ComparisonGraph_to_list(ComparisonGraph &G) {
+  elist_t edges;
+  std::unordered_set<std::pair<int, int>, pair_hash> processed_edges;  // To avoid duplicates
+
+  // Loop over all nodes in the graph
+  for (auto i : G.nodes()) {
+    // Loop over all neighbors of node i
+    for (const auto& [j, BN] : G.neighbors(i)) {
+      // Only process edge (i, j) if (j, i) hasn't been processed yet
+      if (processed_edges.find({j, i}) == processed_edges.end()) {
+        // Add edge in both directions
+        edges.push_back({i, j});
+        edges.push_back({j, i});
+
+        // Mark the edge as processed
+        processed_edges.insert({i, j});
+      }
+    }
+  }
+  return edges;
+}
 
 // create an undirected edgelist from a DiGraph – lists edges in both directions
 elist_t DiGraph_to_list(DiGraph &G) {
@@ -75,6 +108,32 @@ vec_t log0(vec_t X) {
     else ans[i] = 0;
   }
   return ans;
+}
+
+
+floatT marginal_entropy(ComparisonGraph const &G, marginal_t &marg, int L) {
+    floatT S = 0.0;
+    int N = G.number_of_nodes();
+    #pragma omp parallel for reduction(+: S)
+    for (int i = 0; i < N; ++i) {
+        auto mu1 = marg.at(i);
+        mu1.normalize();
+        
+        // Create Chebyshev object from the normalised marginals
+        cheby::Chebyshev L(mu1.vals() * log0(mu1.vals()), INIT_BY_VALUES);
+        
+        // Count the number of neighbors
+        floatT di = G.neighbors(i).size();  // Number of neighbors
+        
+        /* Debugging statement to check the number of neighbors
+        #pragma omp critical
+        std::cout << "Node " << i << " has " << di << " neighbors." << std::endl;*/
+
+
+        // Update the entropy value
+        S += (di - 1) * cheby::Chebyshev_value(1.0, cheby::Chebyshev_coef_integrate(L.coefs()));
+    }
+    return S;
 }
 
 floatT marginal_entropy(DiGraph const &G, marginal_t &marg, int L){

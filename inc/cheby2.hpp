@@ -1,7 +1,6 @@
 #pragma once
 #include <valarray>
 #include "r2r.hpp"
-
 #define _USE_MATH_DEFINES
 #include <cmath>
 
@@ -80,14 +79,16 @@ namespace cheby {
 
   ArrayXd ChebPts(int N) {
     // CHANGED
-    ArrayXd pts(0.0,N);
-    floatT pi_twoN = M_PI / (2.0*N);
-    for (int k=0; k<N; ++k)
-      pts[k] = cos( (2.0*k + 1.0) * pi_twoN );
+    ArrayXd pts(N);
+    floatT pi_twoN = M_PI / (2.0 * N);
+          
+    for (int k = 0; k < N; ++k)
+        pts[k] = cos((2.0 * k + 1.0) * pi_twoN);
     return pts;
   }
-    
-  
+
+  // floatT sample_1d(Chebyshev const &f, double u)
+
   class Chebyshev {
     private:
       ArrayXd c;  // coefficients
@@ -200,5 +201,13 @@ namespace cheby {
     c /= Z;
     f /= Z;
   }
+
+// Dot product function for ArrayXd
+    floatT dot(const ArrayXd &a, const ArrayXd &b) {
+        if (a.size() != b.size()) {
+            throw std::invalid_argument("Dot product requires equal size arrays.");
+        }
+        return (a * b).sum(); // Element-wise multiplication followed by summation
+    }
 }
 
